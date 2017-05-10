@@ -25,10 +25,7 @@ class robot(object):
 
         plt.ion()
         self.ax = self.environment.ax
-        #plt.subplots(1)
-        # self.ax.set_xlim([-30,30])
-        # self.ax.set_ylim([0,30])
-
+        
         for j in range(num_joints):
             x= joint(joint_ranges[j])
             self.joints.append(x)
@@ -44,49 +41,15 @@ class robot(object):
         sign=steps/(theta/step_size)
         limit_reached=0
         for s in range(1,int(steps)+1):
-
             #check for joint limit
             limit_reached=self.joints[joint_id].rotate(sign*step_size)
             if limit_reached:
                 break
 
-            #check for ground
-            pos=self.compute_pos()
-            # if pos[-1][1]<0:
-            #     #self.joints[joint_id].rotate(-1*sign*step_size)
-            #     print "ground", joint_id, self.joints[joint_id].angle
-            #     break
-
             if self.arm_obstructed(): self.joints[joint_id].rotate(-1*sign*step_size); break
-
-            #pdb.set_trace()
-            # self.pos=self.compute_pos()
             self.display_robot()
 
-        # if theta != steps*step_size and limit_reached!=1:
-        #     self.joints[joint_id].rotate(theta-step_size*steps)
-        #     pos=self.compute_pos()
-        #     if pos[-1][1]<0:
-        #         print "ground"
-        #         self.joints[joint_id].rotate(-1*(theta-step_size*steps))
-        #
-        #     else:
-        #         bases=pos
-        #         bases.insert(0,(0,0))
-        #         #check for obstacles
-        #         # for o in self.environment.objects:
-        #         #     for i,c in enumerate(self.arm_comps):
-        #         #         if self.line_intersect(bases[i], sum(self.joints[a].angle for a in range(i+1)), c.length, (o[1],o[1]+o[3]), o[0])==1 or \
-        #         #         self.line_intersect(bases[i], sum(self.joints[a].angle for a in range(i+1)), c.length, (o[1],o[1]+o[3]), o[0]+o[2])==1 or \
-        #         #         self.line_intersect(bases[i], sum(self.joints[a].angle for a in range(i+1)), c.length, (o[0],o[0]+o[2]), None, o[1])==1 or \
-        #         #         self.line_intersect(bases[i], sum(self.joints[a].angle for a in range(i+1)), c.length, (o[0],o[0]+o[2]), None, o[1]+o[3])==1:
-        #         #             print "obstacle"
-        #         #             self.joints[joint_id].rotate(-1*sign*step_size)
-        #         #             break
-        #         if self.arm_obstructed(): self.joints[joint_id].rotate(-1*(theta-step_size*steps))
-
         self.pos=self.compute_pos()
-        # self.display_robot()
 
 
 #################
