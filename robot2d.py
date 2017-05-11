@@ -18,14 +18,15 @@ class robot(object):
         self.display=display
         self.joints=[]
         self.arm_comps=[]
-        self.pos=[]
+        #self.pos=[]
         self.comp_plot=[]   #refernce for the plotted arm comps
         self.path=[]
 
 
-        plt.ion()
-        self.ax = self.environment.ax
-        
+        if self.display:
+            plt.ion()
+            self.ax = self.environment.ax
+
         for j in range(num_joints):
             x= joint(joint_ranges[j])
             self.joints.append(x)
@@ -35,7 +36,7 @@ class robot(object):
 #################
 
     def rotate_joint(self,joint_id, theta):
-        step_size=math.pi/12
+        step_size=math.pi/36
         #pdb.set_trace()
         steps=abs(theta/step_size)
         sign=steps/(theta/step_size)
@@ -43,13 +44,15 @@ class robot(object):
         for s in range(1,int(steps)+1):
             #check for joint limit
             limit_reached=self.joints[joint_id].rotate(sign*step_size)
-            if limit_reached:
-                break
 
+            if limit_reached: break
             if self.arm_obstructed(): self.joints[joint_id].rotate(-1*sign*step_size); break
-            self.display_robot()
 
-        self.pos=self.compute_pos()
+            self.display_robot()
+            self.path.append(self.compute_pos())
+
+
+        #self.pos=self.compute_pos()
 
 
 #################
@@ -164,7 +167,7 @@ class robot(object):
 
 
     def display_robot(self, dur=0.1):
-        if ~display: return
+        if self.display==False: return
         base=(0,0)
         pos=self.compute_pos()
 
@@ -245,11 +248,13 @@ class environment(object):
     def __init__(self, objects):
         super(environment, self).__init__()
         self.objects=objects
+        self.display=True
 
-        plt.ion()
-        fig,self.ax = plt.subplots(1)
-        self.ax.set_xlim([-30,30])
-        self.ax.set_ylim([0,30])
+        if self.display==True:
+            #plt.ion()
+            fig,self.ax = plt.subplots(1)
+            self.ax.set_xlim([-30,30])
+            self.ax.set_ylim([0,30])
 
 #################
 
@@ -258,8 +263,8 @@ class environment(object):
             r=Rectangle((o[0],o[1]), o[2], o[3] , color='grey' )
             self.ax.add_patch(r)
 
-        plt.show()
-        plt.pause(0.01)
+        #plt.show()
+        #plt.pause(2)
 
 
 
@@ -272,7 +277,7 @@ if __name__ == "__main__":
     E=environment([(12,6,3,4),(-27,4,11,6),(2,12,24,2)])    # x,y,w,h
     E.display_environment()
 
-    R=robot(3,[10,8,6],[math.pi/1,math.pi/1.5,math.pi/2],E)
+    R=robot(3,[10,8,6],[math.pi/2,math.pi/1.5,math.pi/2],environment=E, display=False)
 
     import random
     r=random.randint(10,30)
@@ -281,7 +286,9 @@ if __name__ == "__main__":
         a=random.randint(2,10)
         b=(2*random.randint(0,1))-1
         R.rotate_joint(j,b*math.pi/a)
-        # R.rotate_joint(1,-math.pi/2)
-        # R.rotate_joint(2,-math.pi/2)
 
     R.display_robot(2)
+
+    for j in range(len(R.path)-1):
+        plt.plot([R.path[j][2][0],R.path[j+1][2][0]] ,[R.path[j][2][1],R.path[j+1][2][1]] , color='b', alpha=(float(j)/len(R.path))**2)
+    plt.show()
