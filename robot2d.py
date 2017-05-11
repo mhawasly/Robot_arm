@@ -49,7 +49,7 @@ class robot(object):
             if self.arm_obstructed(): self.joints[joint_id].rotate(-1*sign*step_size); break
 
             self.display_robot()
-            self.path.append(self.compute_pos())
+            self.path.append([ self.compute_pos(),[j.angle for j in self.joints] ] )
 
 
         #self.pos=self.compute_pos()
@@ -277,18 +277,28 @@ if __name__ == "__main__":
     E=environment([(12,6,3,4),(-27,4,11,6),(2,12,24,2)])    # x,y,w,h
     E.display_environment()
 
-    R=robot(3,[10,8,6],[math.pi/2,math.pi/1.5,math.pi/2],environment=E, display=False)
+    #R=robot(3,[10,8,6],[math.pi/2,math.pi/1.5,math.pi/2],environment=E, display=False)
 
     import random
-    r=random.randint(10,30)
-    for i in range(r):
-        j=random.randint(0,2)
-        a=random.randint(2,10)
-        b=(2*random.randint(0,1))-1
-        R.rotate_joint(j,b*math.pi/a)
 
-    R.display_robot(2)
 
-    for j in range(len(R.path)-1):
-        plt.plot([R.path[j][2][0],R.path[j+1][2][0]] ,[R.path[j][2][1],R.path[j+1][2][1]] , color='b', alpha=(float(j)/len(R.path))**2)
-    plt.show()
+    for h in range(1000):
+        R=robot(3,[10,8,6],[math.pi/2,math.pi/1.5,math.pi/2],environment=E, display=False)
+        r=random.randint(10,30)
+        for i in range(r):
+            j=random.randint(0,2)
+            a=random.randint(2,10)
+            b=(2*random.randint(0,1))-1
+            R.rotate_joint(j,b*math.pi/a)
+
+        R.display_robot(2)
+
+        '''save R.path'''
+        with open('paths/path_%d.dat'%h,'w') as f:
+            f.write('#a1_X a1_Y a2_X a2_Y a3_X a3_Y j_1 j_2 j_3\n')
+            #print ["%.3f %.3f %.3f %.3f %.3f %.3f"%(p[0][0],p[0][1],p[1][0],p[1][1],p[2][0],p[2][1]) for [p,q] in R.path]
+            f.write('\n'.join(["%.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f"%(p[0][0],p[0][1],p[1][0],p[1][1],p[2][0],p[2][1],q[0],q[1],q[2]) for [p,q] in R.path]))
+
+        # for j in range(len(R.path)-1):
+        #     plt.plot([R.path[j][2][0],R.path[j+1][2][0]] ,[R.path[j][2][1],R.path[j+1][2][1]] , color='b', alpha=(float(j)/len(R.path))**2)
+        # plt.show()
