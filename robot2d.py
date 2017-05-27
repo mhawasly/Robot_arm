@@ -20,6 +20,7 @@ class robot(object):
         self.arm_comps=[]
         #self.pos=[]
         self.comp_plot=[]   #refernce for the plotted arm comps
+        self.comp_plot_copy=[]   #refernce for the plotted arm comps
         self.path=[]
 
 
@@ -37,25 +38,54 @@ class robot(object):
 
     def rotate_joint(self,joint_id, theta):
         step_size=math.pi/36
-        #pdb.set_trace()
-        steps=abs(theta/step_size)
-        sign=steps/(theta/step_size)
-        limit_reached=0
-        for s in range(1,int(steps)+1):
-            #check for joint limit
-            limit_reached=self.joints[joint_id].rotate(sign*step_size)
+        num_steps=0
+        steps=[]
 
-            if limit_reached: break
-            if self.arm_obstructed(): self.joints[joint_id].rotate(-1*sign*step_size); break
+        if theta>=step_size:
+            #pdb.set_trace()
+            num_steps=abs(int(theta/step_size))
+            sign=num_steps/(theta/step_size)
+            limit_reached=0
+
+            steps=[sign*step_size]*num_steps
+        steps.append(theta-num_steps*step_size)
+
+
+        for s in steps:
+            #check for joint limit
+            limit_reached=self.joints[joint_id].rotate(s)
+
+            if limit_reached:
+                print "limit reached, joint ", joint_id
+                break
+            if self.arm_obstructed():
+                self.joints[joint_id].rotate(-1*s);
+                print "Obstruction"
+                break
 
             self.display_robot()
             self.path.append([ self.compute_pos(),[j.angle for j in self.joints] ] )
+
+
+
+
+
 
 
         #self.pos=self.compute_pos()
 
 
 #################
+    def set_joints(self,joints):
+        #pdb.set_trace()
+        for i,j in enumerate(joints):
+            self.joints[i].angle=j
+
+        return not self.arm_obstructed()
+
+
+#################
+
 
 
 
@@ -77,7 +107,7 @@ class robot(object):
                 self.line_intersect2(bases[i], sum(self.joints[a].angle for a in range(i+1)), c.length, (o[0],o[0]+o[2]), None, o[1]+o[3])==1:
                     #pdb.set_trace()
                     obstructed=True
-                    print "obstacle"
+
 
                     break
             if obstructed: break
@@ -113,7 +143,7 @@ class robot(object):
         return intersect
 
 
-
+#################
 
     def line_intersect2(self, base_1, angle_1, l_1, range_2, x_2=None , y_2=None):
         #line 1 starts at base_1, extends for l_1 at angle_1
@@ -149,14 +179,16 @@ class robot(object):
 
 #################
 
-    def compute_pos(self):
+    def compute_pos(self, joints=[]):
         base=(0,0)
         pos=[]
-        for j in range(len(self.joints)):
+        if joints==[]: joints=[j.angle for j in self.joints]
+
+        for j in range(len(joints)):
             if j==0:
-                pos.append( (self.arm_comps[j].length*math.sin(self.joints[j].angle), self.arm_comps[j].length*math.cos(self.joints[j].angle))  )
+                pos.append( (self.arm_comps[j].length*math.sin(joints[j]), self.arm_comps[j].length*math.cos(joints[j]))  )
             else:
-                a=sum([self.joints[h].angle for h in range(j+1)])
+                a=sum([joints[h] for h in range(j+1)])
                 #pos.append(   (pos[j-1][0]+self.arm_comps[j].length*math.sin(self.joints[j].angle), pos[j-1][1]+self.arm_comps[j].length*math.cos(self.joints[j].angle))  )
                 pos.append(   (pos[j-1][0]+self.arm_comps[j].length*math.sin(a), pos[j-1][1]+self.arm_comps[j].length*math.cos(a))  )
 
@@ -192,6 +224,40 @@ class robot(object):
             self.ax.add_patch(r)
             self.comp_plot.append(r)
             # ax.add_patch(c)
+
+        plt.show()
+        plt.pause(dur)
+
+
+#################
+
+
+
+    def display_robot_copy(self, joints,  dur=0.1 , colour=None):
+        #import pdb; pdb.set_trace()
+
+
+        if colour is None:
+            colour=(1,0,0,0.5)
+        # else:
+            # import pdb; pdb.set_trace()
+        l=len(self.comp_plot_copy)
+        if(l!=0):
+            for i in range(l):
+                cp=self.comp_plot_copy[0]
+                cp.remove()
+                self.comp_plot_copy.pop(0)
+
+        pos=self.compute_pos(joints)
+        base=(0,0)
+        pos.insert(0,base)
+
+        for i,j in enumerate(joints):
+            r=Rectangle(pos[i],  .5, self.arm_comps[i].length, color=colour)
+            t = mpl.transforms.Affine2D().rotate_around(pos[i][0],pos[i][1],-1*sum([joints[h] for h in range(i+1) ]) ) + self.ax.transData
+            r.set_transform(t)
+            self.ax.add_patch(r)
+            self.comp_plot_copy.append(r)
 
         plt.show()
         plt.pause(dur)
@@ -233,11 +299,11 @@ class joint(object):
         elif self.angle+theta > self.range:
             self.angle = self.range
             limit_reached=1
-            print "limit reached!", self.angle
+            # print "limit reached!", self.angle
         elif self.angle + theta < -1*self.range:
             self.angle = -1* self.range
             limit_reached=1
-            print "limit reached!", self.angle
+            # print "limit reached!", self.angle
         return limit_reached
 
 
@@ -280,6 +346,7 @@ if __name__ == "__main__":
     #R=robot(3,[10,8,6],[math.pi/2,math.pi/1.5,math.pi/2],environment=E, display=False)
 
     import random
+
 
 
     for h in range(1000):
